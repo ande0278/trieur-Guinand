@@ -29,7 +29,7 @@ void setup()
   // Initialise l'écran LCD
   Wire1.setPins(15, 5);
   lcd.begin(16, 2, LCD_5x8DOTS, Wire1);
-  lcd.printf("Trieur de balles");
+  // lcd.printf("Trieur de balles");
 
   // initialise la couleur de l'écran
   const int colorR = 255;
@@ -39,10 +39,11 @@ void setup()
   lcd.setRGB(colorR, colorG, colorB);
 
   // configuration des entées
-//  pinMode(SENS, OUTPUT);
+  pinMode(SENS, OUTPUT);
   pinMode(BP_BLEU, INPUT_PULLUP);
   pinMode(BP_JAUNE, INPUT_PULLUP);
   pinMode(BP_VERT, INPUT_PULLUP);
+  pinMode(POTAR, INPUT);
 
   ledcSetup(canal, frequence, resolution);
 
@@ -51,8 +52,12 @@ void setup()
 
 void loop()
 {
+  // Lecture des entrées
+  VAL_BP_BLEU = digitalRead(BP_BLEU);
+  VAL_BP_JAUNE = digitalRead(BP_JAUNE);
+  VAL_BP_VERT = digitalRead(BP_VERT);
 
-  /*if (VAL_BP_BLEU==false)
+  if (VAL_BP_BLEU==false)
   {
     digitalWrite(SENS, HIGH);
     ledcWrite(canal, 511);
@@ -61,48 +66,18 @@ void loop()
   {
     digitalWrite(SENS, LOW);
     ledcWrite(canal, 511);
-  }*/
-  Serial.printf("Bug\n");
-  VAL_POTAR = analogRead(POTAR);
-  
-  // Lecture des entrées
-  VAL_BP_BLEU = digitalRead(BP_BLEU);
-  VAL_BP_JAUNE = digitalRead(BP_JAUNE);
-  VAL_BP_VERT = digitalRead(BP_VERT);
+  }  
+  else if (VAL_BP_VERT==false)
+  {
+    digitalWrite(SENS, LOW);
+    ledcWrite(canal, 0);
+  }
 
+  delay(100);
+//  VAL_POTAR = analogRead(33);
+  lcd.setCursor(0, 1);
+  lcd.printf("pot=%4d", VAL_POTAR);
 
-  // change de couleur tout les X temps
-  /*delay(3000);//temps en ms
-  lcd.setRGB(200, 150, 40);
-  delay(2000);
-  lcd.setRGB(20, 50, 200);
-  delay(1000);
-  lcd.setRGB(255, 0, 120);*/
-
-  // if (VAL_BP_BLEU == false)
-  // {
-  //   lcd.setRGB(200, 150, 40);
-  //   lcd.setCursor(0, 0);
-  //   lcd.printf("C'est BLEU");
-  // }
-  // else if (VAL_BP_JAUNE == false)
-  // {
-  //   lcd.setRGB(20, 50, 200);
-  //   lcd.setCursor(0, 0);
-  //   lcd.printf("C'est JAUNE");
-  // }
-  // else if (VAL_BP_VERT == false)
-  // {
-  //   lcd.setRGB(255, 0, 120);
-  //   lcd.setCursor(0, 0);
-  //   lcd.printf("C'est VERT");
-  // }
-  // else
-  // {
-  //   lcd.setRGB(255, 0, 70);
-  //   lcd.setCursor(0, 0);
-  //   lcd.printf("pot=%d", VAL_POTAR);
-  // }
   delay(100);
   Serial.printf("Test\n");
 }
