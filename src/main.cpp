@@ -1,5 +1,12 @@
 #include <Arduino.h>
 #include "rgb_lcd.h"
+#include <Wire.h>
+#include "Adafruit_TCS34725.h"
+#include <SPI.h>
+
+Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_614MS, TCS34725_GAIN_1X);
+
+uint16_t r, g, b, c, colorTemp, lux;
 
 rgb_lcd lcd;
 
@@ -23,12 +30,15 @@ int resolution = 11;
 
 void setup()
 {
+  init();
+
   // Initialise la liaison avec le terminal
   Serial.begin(115200);
 
   // Initialise l'écran LCD
   Wire1.setPins(15, 5);
   lcd.begin(16, 2, LCD_5x8DOTS, Wire1);
+
   // lcd.printf("Trieur de balles");
 
   // initialise la couleur de l'écran
@@ -48,6 +58,17 @@ void setup()
   ledcSetup(canal, frequence, resolution);
 
   ledcAttachPin(pwm, canal);
+
+  //I2C
+  Wire.begin();
+
+  if (tcs.begin()) {
+    Serial.println("Found sensor");
+  } else {
+    Serial.println("No TCS34725 found ... check your connections");
+    while (1);
+  }
+
 }
 
 void loop()
@@ -74,10 +95,35 @@ void loop()
   }
 
   delay(100);
-//  VAL_POTAR = analogRead(33);
+  //VAL_POTAR = analogRead(33);
   lcd.setCursor(0, 1);
   lcd.printf("pot=%4d", VAL_POTAR);
 
-  delay(100);
+  tcs.getRawData(&r, &g, &b, &c);
+  // colorTemp = tcs.calculateColorTemperature(r, g, b);
+  colorTemp = tcs.calculateColorTemperature_dn40(r, g, b, c);
+  lux = tcs.calculateLux(r, g, b);
+
+  Serial.print("Color Temp: "); Serial.print(colorTemp, DEC); Serial.print(" K - ");
+  Serial.print("Lux: "); Serial.print(lux, DEC); Serial.print(" - ");
+  Serial.print("R: "); Serial.print(r, DEC); Serial.print(" ");
+  Serial.print("G: "); Serial.print(g, DEC); Serial.print(" ");
+  Serial.print("B: "); Serial.print(b, DEC); Serial.print(" ");
+  Serial.print("C: "); Serial.print(c, DEC); Serial.print(" ");
+  Serial.println(" ");
+
+  /*delay(100);
   Serial.printf("Test\n");
+
+  Wire.requestFrom(22, 2);
+  Wire.setClock(21);
+  while (Wire.available())
+  {
+    char c = Wire.read();
+    Serial.print(c & 0xFF, BIN);
+    Serial.print(", ");
+  }
+  Serial.println();
+  delay(200);*/
+
 }
