@@ -23,8 +23,8 @@ int BP_JAUNE = 2;
 int BP_VERT = 12;
 int POTAR = 33;
 int Vts = 0;
-int Consigne = 10;
-float Kp = 100, Ki = 10;
+int Consigne = 0;
+float Kp = 30, Ki = 5;
 int etat = 0;
 int servo = 13;
 int pote;
@@ -37,16 +37,17 @@ int VAL_POTAR;
 
 int frequence = 25000;
 int canal = 0;
-int canal1 = 1;
+int canal1 = 2;
 int resolution = 11;
 
 void vTaskPeriodic(void *pvParameters)
 {
   int a, aprecedent = 0, err, Somme=0, delta;
   TickType_t xLastWakeTime;
-  float speed;
   // Lecture du nombre de ticks quand la tâche commence
   xLastWakeTime = xTaskGetTickCount();
+
+  float speed;
   while (1)
   {
     a = encoder.getCount();
@@ -77,8 +78,6 @@ void vTaskPeriodic(void *pvParameters)
 
 void setup()
 {
-  init();
-
   // Initialise la liaison avec le terminal
   Serial.begin(115200);
 
@@ -101,10 +100,10 @@ void setup()
   pinMode(POTAR, INPUT);
 
   ledcSetup(canal, frequence, resolution);
-  // ledcSetup(canal1, 50, 16);
+  ledcSetup(canal1, 50, 16);
 
   ledcAttachPin(pwm, canal);
-  // ledcAttachPin(servo, canal1);
+  ledcAttachPin(servo, canal1);
 
   // I2C
   Wire.begin();
@@ -135,53 +134,47 @@ void loop()
   lcd.printf("pot=%4d", VAL_POTAR);
   Consigne = (VAL_POTAR-2047) / 50;
 
+// code pour lire les couleur du capteur de couleur
+
   tcs.getRawData(&r, &g, &b, &c);
-  // colorTemp = tcs.calculateColorTemperature(r, g, b);
+  colorTemp = tcs.calculateColorTemperature(r, g, b);
   colorTemp = tcs.calculateColorTemperature_dn40(r, g, b, c);
   lux = tcs.calculateLux(r, g, b);
 
-  // Serial.print("Color Temp: ");
-  // Serial.print(colorTemp, DEC);
-  // Serial.print(" K - ");
-  // Serial.print("Lux: ");
-  // Serial.print(lux, DEC);
-  // Serial.print(" - ");
-  // Serial.print("R: ");
-  // Serial.print(r, DEC);
-  // Serial.print(" ");
-  // Serial.print("G: ");
-  // Serial.print(g, DEC);
-  // Serial.print(" ");
-  // Serial.print("B: ");
-  // Serial.print(b, DEC);
-  // Serial.print(" ");
-  // Serial.print("C: ");
-  // Serial.print(c, DEC);
-  // Serial.print(" ");
-  // Serial.println(" ");
+ Serial.print("Color Temp: ");
+ Serial.print(colorTemp, DEC);
+ Serial.print(" K - ");
+ Serial.print("Lux: ");
+ Serial.print(lux, DEC);
+ Serial.print(" - ");
+ Serial.print("R: ");
+ Serial.print(r, DEC);
+ Serial.print(" ");
+ Serial.print("G: ");
+ Serial.print(g, DEC);
+ Serial.print(" ");
+ Serial.print("B: ");
+ Serial.print(b, DEC);
+ Serial.print(" ");
+ Serial.print("C: ");
+ Serial.print(c, DEC);
+ Serial.print(" ");
+ Serial.println(" ");
 
+
+// pour etre au milleux 4698, pou etre a gauche 3650, pour etre a droite 5746
   if (VAL_BP_VERT == false)
   {
-    // ledcWrite(canal1, 5746);
+    ledcWrite(canal1, 5746);
   }
   else if (VAL_BP_JAUNE == false)
   {
-    //  ledcWrite(canal1, 3650);
+    ledcWrite(canal1, 3650);
   }
   else
   {
-    // pour etre au milleux 4698, pou etre a gauche 3650, pour etre a droite 5746
-    // ledcWrite(canal1, 4698);
+    ledcWrite(canal1, 4689);
   }
-
-  /*if(speed < Consigne)
-  {
-    speed = Consigne;
-  }
-  else if(speed > Consigne)
-  {
-    speed = Consigne;
-  }*/
 
   delay(1000);
 }
