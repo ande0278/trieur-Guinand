@@ -6,6 +6,8 @@
 #include "ESP32Encoder.h"
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
+#include <CAN.h>
+
 
 ESP32Encoder encoder;
 
@@ -18,22 +20,22 @@ rgb_lcd lcd;
 // définition des numéros des PINS
 int pwm = 27;
 int sens = 26;
-int BP_BLEU = 0;
-int BP_JAUNE = 2;
-int BP_VERT = 12;
-int POTAR = 33;
-int Vts = 0;
-int Consigne = 0;
-float Kp = 30, Ki = 5;
+int bp_bleu = 0;
+int bp_jaune = 2;
+int bp_vert = 12;
+int potar = 33;
+int vts = 0;
+int consigne = 0;
+float kp = 30, ki = 5;
 int etat = 0;
 int servo = 13;
 int pote;
 
 // déclaration des variables pour lire les entrées
-int VAL_BP_BLEU;
-int VAL_BP_JAUNE;
-int VAL_BP_VERT;
-int VAL_POTAR;
+int val_bp_bleu;
+int val_bp_jaune;
+int val_bp_vert;
+int val_potar;
 
 int frequence = 25000;
 int canal = 0;
@@ -42,7 +44,7 @@ int resolution = 11;
 
 void vTaskPeriodic(void *pvParameters)
 {
-  int a, aprecedent = 0, err, Somme=0, delta;
+  int a, aprecedent = 0, err, somme=0, delta;
   TickType_t xLastWakeTime;
   // Lecture du nombre de ticks quand la tâche commence
   xLastWakeTime = xTaskGetTickCount();
@@ -52,10 +54,10 @@ void vTaskPeriodic(void *pvParameters)
   {
     a = encoder.getCount();
     delta = a - aprecedent;
-    err = Consigne - delta;
-    Somme += err;
-    if (Somme>204) Somme=204; else if (Somme<-204) Somme=-204;
-    speed = Ki * Somme + Kp * err;
+    err = consigne - delta;
+    somme += err;
+    if (somme>204) somme=204; else if (somme<-204) somme=-204;
+    speed = ki * somme + kp * err;
     aprecedent = a;
     if (speed > 0)
     {
@@ -71,7 +73,7 @@ void vTaskPeriodic(void *pvParameters)
       digitalWrite(sens, HIGH);
       ledcWrite(canal, -speed);
     }
-    Serial.printf("%d %f %d\n", err, speed, Somme);
+    //Serial.printf("%d %f %d\n", err, speed, somme);
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(10));
   }
 }
@@ -79,7 +81,18 @@ void vTaskPeriodic(void *pvParameters)
 void setup()
 {
   // Initialise la liaison avec le terminal
+
   Serial.begin(115200);
+  while (!Serial);
+
+  Serial.println("CAN Sender");
+
+  CAN.setPins(4, 18);
+  // start the CAN bus at 500 kbps
+  if (!CAN.begin(500E3)) {
+    Serial.println("Starting CAN failed!");
+    while (1);
+  }
 
   // Initialise l'écran LCD
   Wire1.setPins(15, 5);
@@ -94,10 +107,10 @@ void setup()
 
   // configuration des entées
   pinMode(sens, OUTPUT);
-  pinMode(BP_BLEU, INPUT_PULLUP);
-  pinMode(BP_JAUNE, INPUT_PULLUP);
-  pinMode(BP_VERT, INPUT_PULLUP);
-  pinMode(POTAR, INPUT);
+  pinMode(bp_bleu, INPUT_PULLUP);
+  pinMode(bp_jaune, INPUT_PULLUP);
+  pinMode(bp_vert, INPUT_PULLUP);
+  pinMode(potar, INPUT);
 
   ledcSetup(canal, frequence, resolution);
   ledcSetup(canal1, 50, 16);
@@ -125,14 +138,28 @@ void setup()
 void loop()
 {
 
+  Serial.print("Sending packet ... ");
+
+  CAN.beginPacket(0x12);
+  CAN.write('h');
+  CAN.write('e');
+  CAN.write('l');
+  CAN.write('l');
+  CAN.write('o');
+  CAN.endPacket();
+
+  Serial.println("done");
+
+  delay(1000);
+
   // Lecture des entrées
-  VAL_BP_BLEU = digitalRead(BP_BLEU);
-  VAL_BP_JAUNE = digitalRead(BP_JAUNE);
-  VAL_BP_VERT = digitalRead(BP_VERT);
-  VAL_POTAR = analogRead(POTAR);
+  val_bp_bleu = digitalRead(bp_bleu);
+  val_bp_jaune = digitalRead(bp_jaune);
+  val_bp_vert = digitalRead(bp_vert);
+  val_potar = analogRead(potar);
   lcd.setCursor(0, 1);
-  lcd.printf("pot=%4d", VAL_POTAR);
-  Consigne = (VAL_POTAR-2047) / 50;
+  lcd.printf("pot=%4d", val_potar);
+  consigne = (val_potar-2047) / 50;
 
 // code pour lire les couleur du capteur de couleur
 
@@ -141,33 +168,33 @@ void loop()
   colorTemp = tcs.calculateColorTemperature_dn40(r, g, b, c);
   lux = tcs.calculateLux(r, g, b);
 
- Serial.print("Color Temp: ");
- Serial.print(colorTemp, DEC);
- Serial.print(" K - ");
- Serial.print("Lux: ");
- Serial.print(lux, DEC);
- Serial.print(" - ");
- Serial.print("R: ");
- Serial.print(r, DEC);
- Serial.print(" ");
- Serial.print("G: ");
- Serial.print(g, DEC);
- Serial.print(" ");
- Serial.print("B: ");
- Serial.print(b, DEC);
- Serial.print(" ");
- Serial.print("C: ");
- Serial.print(c, DEC);
- Serial.print(" ");
- Serial.println(" ");
+ //Serial.print("Color Temp: ");
+ //Serial.print(colorTemp, DEC);
+ //Serial.print(" K - ");
+ //Serial.print("Lux: ");
+ //Serial.print(lux, DEC);
+ //Serial.print(" - ");
+ //Serial.print("R: ");
+ //Serial.print(r, DEC);
+ //Serial.print(" ");
+ //Serial.print("G: ");
+ //Serial.print(g, DEC);
+ //Serial.print(" ");
+ //Serial.print("B: ");
+ //Serial.print(b, DEC);
+ //Serial.print(" ");
+ //Serial.print("C: ");
+ //Serial.print(c, DEC);
+ //Serial.print(" ");
+ //Serial.println(" ");
 
 
 // pour etre au milleux 4698, pou etre a gauche 3650, pour etre a droite 5746
-  if (VAL_BP_VERT == false)
+  if (val_bp_vert == false)
   {
     ledcWrite(canal1, 5746);
   }
-  else if (VAL_BP_JAUNE == false)
+  else if (val_bp_jaune == false)
   {
     ledcWrite(canal1, 3650);
   }
@@ -175,6 +202,4 @@ void loop()
   {
     ledcWrite(canal1, 4689);
   }
-
-  delay(1000);
 }
